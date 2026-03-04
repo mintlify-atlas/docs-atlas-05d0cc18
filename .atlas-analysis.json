@@ -1,0 +1,61 @@
+{
+  "projectType": "frontend",
+  "projectName": "Night Fury Radar",
+  "projectDescription": "An atmospheric side-scrolling survival game where you fly blind and pulse sonar to navigate pitch-black caves.",
+  "theme": "almond",
+  "primaryColor": "#a855f7",
+  "lightColor": "#c084fc",
+  "darkColor": "#7c3aed",
+  "navigation": {
+    "groups": [
+      {
+        "group": "Overview",
+        "pages": [
+          "introduction",
+          "quickstart"
+        ]
+      },
+      {
+        "group": "Gameplay",
+        "pages": [
+          "gameplay/controls",
+          "gameplay/mechanics",
+          "gameplay/powerups"
+        ]
+      },
+      {
+        "group": "Development",
+        "pages": [
+          "development/setup",
+          "development/architecture",
+          "development/rendering"
+        ]
+      },
+      {
+        "group": "Reference",
+        "pages": [
+          "reference/game-state",
+          "reference/configuration"
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Sonar pulse mechanics for obstacle revelation",
+    "Procedurally generated cave systems",
+    "Dynamic difficulty scaling based on player position",
+    "Powerup system (Immunity, Fireball, Plasma)",
+    "Canvas-based rendering with particle effects",
+    "Keyboard controls (WASD/Arrow keys + Space)",
+    "High score tracking and pause menu"
+  ],
+  "publicApiSurface": [
+    "NightFuryRadar (React Component)",
+    "Player State (x, y, vy, vx, baseSpeed, gravity, lift)",
+    "Pulse System (energy, cost, recharge rates)",
+    "Obstacle Generation (makePillar, GAP constant)",
+    "Powerup Types (IMMUNITY, FIREBALL, PLASMA)",
+    "Game Modes (START, PLAY, PAUSED, CRASH)",
+    "Controls (Space: pulse, WASD/Arrows: movement, ESC: pause)"
+  ]
+}
