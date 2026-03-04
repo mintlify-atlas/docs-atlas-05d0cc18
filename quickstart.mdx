@@ -13,7 +13,7 @@ Before you begin, ensure you have the following installed:
 - **npm** (comes with Node.js)
 
 <Note>
-  This project uses Next.js 16.1.6 with React 19.2.3 and React Three Fiber for 3D rendering.
+  This project uses Next.js 16.1.6 with React 19.2.3 and Canvas 2D API for rendering.
 </Note>
 
 ## Installation
@@ -23,8 +23,8 @@ Before you begin, ensure you have the following installed:
     Clone the Night Fury Radar repository to your local machine:
 
     ```bash
-    git clone <repository-url>
-    cd night-fury-radar
+    git clone https://github.com/ohhmkar/code-it-ralph-26.git
+    cd code-it-ralph-26
     ```
   </Step>
 
@@ -38,9 +38,6 @@ Before you begin, ensure you have the following installed:
     This will install:
     - `next` (16.1.6) - The React framework
     - `react` and `react-dom` (19.2.3) - React libraries
-    - `@react-three/fiber` (^9.5.0) - React renderer for Three.js
-    - `@react-three/drei` (^10.7.7) - Useful helpers for React Three Fiber
-    - `three` (^0.182.0) - 3D library
   </Step>
 
   <Step title="Start the development server">
@@ -115,7 +112,7 @@ The game is located in `app/components/NightFuryRadar.js` and features:
 ## Project Structure
 
 ```
-night-fury-radar/
+code-it-ralph-26/
 ├── app/
 │   ├── components/
 │   │   └── NightFuryRadar.js    # Main game component
