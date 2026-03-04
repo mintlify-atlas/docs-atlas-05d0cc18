@@ -1,0 +1,149 @@
+---
+title: Controls
+description: Complete control reference for Night Fury Radar
+icon: gamepad
+---
+
+## Movement Controls
+
+Control the Night Fury dragon using keyboard inputs to navigate through obstacles.
+
+<ParamField path="Arrow Keys / WASD" type="Movement">
+  Use arrow keys or WASD keys to control the dragon's flight
+</ParamField>
+
+### Vertical Movement
+
+<ParamField path="↑ / W" type="Key" default="Up">
+  **Ascend** - Apply upward lift to the dragon
+  
+  - **Lift force**: `-0.48` units per frame
+  - Applies full lift value when held
+  - Affected by gravity (`0.13`) and drag (`0.96`)
+</ParamField>
+
+<ParamField path="↓ / S" type="Key" default="Down">
+  **Descend** - Apply downward force to the dragon
+  
+  - **Force**: `70%` of lift force (`-0.336` units per frame)
+  - Less powerful than ascending
+  - Helps control descent speed
+</ParamField>
+
+### Horizontal Movement
+
+<ParamField path="→ / D" type="Key" default="Right">
+  **Move Right** - Accelerate forward
+  
+  - **Acceleration**: `+0.22` units per frame
+  - Increases forward speed
+  - Subject to horizontal drag (`0.93`)
+  - Player position capped at `65%` of screen width
+</ParamField>
+
+<ParamField path="← / A" type="Key" default="Left">
+  **Move Left** - Decelerate/move backward
+  
+  - **Acceleration**: `-0.14` units per frame
+  - Slower than forward acceleration
+  - Player position has minimum of `40` pixels from left edge
+</ParamField>
+
+<Note>
+  The dragon's movement is affected by physics:
+  - **Gravity**: `0.13` units/frame (constant downward pull)
+  - **Vertical drag**: `0.96` (96% velocity retained each frame)
+  - **Horizontal drag**: `0.93` (93% velocity retained each frame)
+</Note>
+
+## Sonar Pulse
+
+<ParamField path="SPACE" type="Key" required>
+  **Fire Sonar Pulse** - Reveals nearby obstacles
+  
+  Context-dependent behavior:
+  - **During gameplay**: Fires a sonar pulse to reveal obstacles
+  - **Start screen**: Begins the game
+  - **After crash**: Restarts the game (when crash timer expires)
+  - **Pause menu**: Selects highlighted menu option
+</ParamField>
+
+<Warning>
+  Each pulse costs **22 energy units** from your plasma meter. You cannot fire if energy is below this threshold.
+</Warning>
+
+## Menu Controls
+
+### Pause Menu
+
+<ParamField path="ESC" type="Key">
+  **Pause/Resume Toggle**
+  
+  - Press during gameplay to pause
+  - Press in pause menu to resume
+  - Pauses all game physics and progression
+</ParamField>
+
+<ParamField path="↑ / W (Pause Menu)" type="Key">
+  **Navigate Up** - Move selection up in pause menu
+  
+  Menu cycles through 3 options:
+  1. Resume
+  2. Restart
+  3. Main Menu
+</ParamField>
+
+<ParamField path="↓ / S (Pause Menu)" type="Key">
+  **Navigate Down** - Move selection down in pause menu
+</ParamField>
+
+<ParamField path="SPACE / ENTER (Pause Menu)" type="Key">
+  **Select** - Confirm selected menu option
+  
+  - **Resume**: Return to gameplay
+  - **Restart**: Start a new game
+  - **Main Menu**: Return to title screen
+</ParamField>
+
+## Control Tips
+
+<AccordionGroup>
+  <Accordion title="Movement Precision">
+    The dragon has momentum-based physics:
+    
+    - Tap keys briefly for small adjustments
+    - Hold keys for sustained movement
+    - Release early to coast using drag physics
+    - Vertical movement is more responsive than horizontal
+  </Accordion>
+
+  <Accordion title="Energy Management">
+    Plan your pulses carefully:
+    
+    - Each pulse costs **22 energy**
+    - Energy recharges automatically (see [Mechanics](/gameplay/mechanics))
+    - Watch the plasma bar in the top-right corner
+    - At high speeds, energy recharges faster
+  </Accordion>
+
+  <Accordion title="Speed Control">
+    Your horizontal position affects game speed:
+    
+    - Moving right increases scroll speed
+    - Speed multiplier: `1 + (x_position / screen_width) × 3.5`
+    - Higher speed = more points but harder gameplay
+    - Position is clamped between 40px and 65% of screen width
+  </Accordion>
+</AccordionGroup>
+
+## Input Reference Table
+
+| Key | Primary Function | Secondary Function |
+|-----|-----------------|--------------------|
+| `↑` / `W` | Ascend | Menu navigate up |
+| `↓` / `S` | Descend | Menu navigate down |
+| `→` / `D` | Move right | - |
+| `←` / `A` | Move left | - |
+| `SPACE` | Sonar pulse | Start game / Select |
+| `ESC` | Pause/Resume | - |
+| `ENTER` | - | Menu select |

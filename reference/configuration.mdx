@@ -1,0 +1,540 @@
+---
+title: 'Configuration Reference'
+description: 'All tunable constants and gameplay parameters'
+---
+
+## Overview
+
+This page documents all configuration constants and tunable parameters in Night Fury Radar. Values are extracted directly from the source code.
+
+---
+
+## Difficulty Settings
+
+Core parameters that define gameplay difficulty.
+
+<ParamField path="player.baseSpeed" type="number" default="4.5">
+  Base world scrolling speed in pixels per frame. **Harder difficulty setting** (was 3.2 in easier version).
+</ParamField>
+
+<ParamField path="GAP" type="number" default="220">
+  Minimum horizontal distance between obstacle pillars. **Harder difficulty setting** (was 270 in easier version).
+</ParamField>
+
+<ParamField path="obstacleGapVariance" type="number" default="80">
+  Random additional spacing added to GAP: `GAP + Math.random() * 80`. Results in 220-300px spacing.
+</ParamField>
+
+<ParamField path="minObstacleHeight" type="number" default="60">
+  Minimum height for obstacle pillars. **Harder setting** - taller minimum obstacles.
+</ParamField>
+
+<ParamField path="pairGapMultiplier" type="number" default="3.8">
+  Gap calculator for paired obstacles: `H - pairH - player.height * 3.8`. **Harder setting** (was 4.5 for wider gaps).
+</ParamField>
+
+<ParamField path="pairProbability" type="number" default="0.6">
+  Probability of generating paired top+bottom obstacles:
+  - Initial obstacles: 60% (check `Math.random() > 0.4`)
+  - Runtime obstacles: 75% (check `Math.random() > 0.25`)
+  
+  **Harder setting** (was 40% initial).
+</ParamField>
+
+<ParamField path="speedScaler" type="number" default="3.5">
+  Speed multiplier based on player X position: `1 + (player.x / W) * 3.5`. **Harder setting** for faster scaling.
+</ParamField>
+
+---
+
+## Player Physics
+
+Movement and physics parameters.
+
+<ParamField path="player.gravity" type="number" default="0.13">
+  Constant downward acceleration per frame.
+</ParamField>
+
+<ParamField path="player.lift" type="number" default="-0.48">
+  Upward thrust when pressing up key (negative = upward).
+</ParamField>
+
+<ParamField path="player.downLiftMultiplier" type="number" default="0.7">
+  Down key applies `player.lift * 0.7` for gentler descent control.
+</ParamField>
+
+<ParamField path="player.drag" type="number" default="0.96">
+  Vertical velocity decay multiplier (< 1 creates air resistance).
+</ParamField>
+
+<ParamField path="player.dragX" type="number" default="0.93">
+  Horizontal velocity decay multiplier.
+</ParamField>
+
+<ParamField path="player.rightAccel" type="number" default="0.22">
+  Acceleration when pressing right key.
+</ParamField>
+
+<ParamField path="player.leftAccel" type="number" default="0.14">
+  Acceleration when pressing left key (slower than right).
+</ParamField>
+
+<ParamField path="player.minX" type="number" default="40">
+  Minimum allowed X position (left boundary).
+</ParamField>
+
+<ParamField path="player.maxXRatio" type="number" default="0.65">
+  Maximum X as ratio of width: `W * 0.65` (right boundary).
+</ParamField>
+
+<ParamField path="player.width" type="number" default="56">
+  Collision box width.
+</ParamField>
+
+<ParamField path="player.height" type="number" default="32">
+  Collision box height.
+</ParamField>
+
+<ParamField path="player.pitchMultiplier" type="number" default="0.08">
+  Visual rotation based on velocity: `Math.max(-0.4, Math.min(0.4, player.vy * 0.08))`.
+</ParamField>
+
+<ParamField path="player.maxPitch" type="number" default="0.4">
+  Maximum rotation angle in radians (both up and down).
+</ParamField>
+
+---
+
+## Pulse Energy System
+
+<ParamField path="pulse.max" type="number" default="100">
+  Maximum energy capacity.
+</ParamField>
+
+<ParamField path="pulse.cost" type="number" default="22">
+  Energy consumed per pulse fired.
+</ParamField>
+
+<ParamField path="pulse.rechargeBase" type="number" default="0.09">
+  Energy recharged per frame at normal speed.
+</ParamField>
+
+<ParamField path="pulse.rechargeFast" type="number" default="0.22">
+  Energy recharged per frame at high speed (when `speedF > 2`).
+</ParamField>
+
+<ParamField path="pulseStartRadius" type="number" default="80">
+  Initial radius of pulse for instant visibility.
+</ParamField>
+
+<ParamField path="pulseMaxRadius" type="number" default="650">
+  Maximum pulse radius before removal.
+</ParamField>
+
+<ParamField path="pulseExpansionSpeed" type="number" default="12">
+  Pixels added to radius per frame.
+</ParamField>
+
+<ParamField path="fireballMaxRadius" type="number" default="400">
+  Maximum radius for fireball pulses (smaller than normal).
+</ParamField>
+
+<ParamField path="fireballExpansionSpeed" type="number" default="14">
+  Pixels added to fireball radius per frame (faster than normal).
+</ParamField>
+
+<ParamField path="pulseLineWidth" type="number" default="4">
+  Line width for normal pulse rings.
+</ParamField>
+
+<ParamField path="fireballLineWidth" type="number" default="6">
+  Line width for fireball pulse rings.
+</ParamField>
+
+<ParamField path="pulseHueRange" type="string" default="260 + Math.random() * 40">
+  HSL hue values for normal pulses (260-300, purple spectrum).
+</ParamField>
+
+<ParamField path="fireballHue" type="number" default="0">
+  HSL hue for fireball pulses (red).
+</ParamField>
+
+---
+
+## Collision Detection
+
+<ParamField path="collisionTestPoints" type="array">
+  Four test points for polygon collision:
+  - `{x: cx, y: player.y + 2}` - top center
+  - `{x: cx, y: player.y + player.height - 2}` - bottom center
+  - `{x: player.x + player.width - 2, y: cy}` - right center
+  - `{x: player.x + 4, y: cy}` - left center (offset 4px)
+</ParamField>
+
+<ParamField path="collisionMargin" type="number" default="2">
+  Inset from edges for collision points (except left which uses 4px).
+</ParamField>
+
+<ParamField path="screenBoundaryMargin" type="number" default="5">
+  Pixels outside screen bounds before triggering crash: `player.y < -5` or `player.y + player.height > H + 5`.
+</ParamField>
+
+<ParamField path="obstacleRenderMargin" type="number" default="80">
+  Offscreen distance for obstacle rendering culling.
+</ParamField>
+
+<ParamField path="obstacleCullMargin" type="number" default="150">
+  Distance behind screen before obstacles are removed from array.
+</ParamField>
+
+---
+
+## Powerups
+
+### Generation
+
+<ParamField path="powerupSpacing" type="string" default="600 + Math.random() * 400">
+  Distance between powerups: 600-1000 pixels.
+</ParamField>
+
+<ParamField path="powerupSafeMarginY" type="number" default="80">
+  Minimum distance from top/bottom screen edges.
+</ParamField>
+
+<ParamField path="powerupObstacleMargin" type="number" default="50">
+  Minimum distance from obstacle edges.
+</ParamField>
+
+<ParamField path="powerupSafeZoneMin" type="number" default="60">
+  Minimum safe zone height required to place powerup.
+</ParamField>
+
+<ParamField path="powerupOffsetVariance" type="number" default="0.6">
+  Max offset from center: `(safeMaxY - safeMinY) * 0.6`.
+</ParamField>
+
+<ParamField path="powerupCollectionRadius" type="number" default="30">
+  Distance threshold for collecting powerups: `Math.hypot(dx, dy) < 30`.
+</ParamField>
+
+### Types
+
+<ParamField path="POWERUP_TYPES.IMMUNITY" type="object">
+  ```javascript
+  {
+    type: 'immunity',
+    color: '#39ff14',
+    symbol: '◆',
+    duration: 180
+  }
+  ```
+  Duration: 180 frames (3 seconds at 60 FPS).
+</ParamField>
+
+<ParamField path="POWERUP_TYPES.FIREBALL" type="object">
+  ```javascript
+  {
+    type: 'fireball',
+    color: '#ff4444',
+    symbol: '◉',
+    duration: 0
+  }
+  ```
+  Single-use instant effect.
+</ParamField>
+
+<ParamField path="POWERUP_TYPES.PLASMA" type="object">
+  ```javascript
+  {
+    type: 'plasma',
+    color: '#44aaff',
+    symbol: '◈',
+    duration: 0
+  }
+  ```
+  Instant energy refill.
+</ParamField>
+
+### Animation
+
+<ParamField path="powerupPulseSpeed" type="number" default="0.08">
+  Increment to pulse animation value per frame.
+</ParamField>
+
+<ParamField path="powerupScaleVariance" type="string" default="1 + Math.sin(pu.pulse) * 0.15">
+  Scale oscillation: 0.85 to 1.15.
+</ParamField>
+
+<ParamField path="powerupAlphaVariance" type="string" default="0.7 + Math.sin(pu.pulse * 2) * 0.3">
+  Alpha oscillation: 0.4 to 1.0.
+</ParamField>
+
+---
+
+## Obstacle Generation
+
+<ParamField path="obstacleWidthRange" type="string" default="55 + Math.random() * 70">
+  Pillar width: 55-125 pixels.
+</ParamField>
+
+<ParamField path="obstacleSegments" type="number" default="10">
+  Number of segments for generating polygon shape.
+</ParamField>
+
+<ParamField path="obstacleBulgeMultiplier" type="number" default="0.15">
+  Horizontal bulge: `Math.sin(f * Math.PI) * w * 0.15`.
+</ParamField>
+
+<ParamField path="obstacleNoiseAmplitude" type="number" default="8">
+  Random variation in pillar edges.
+</ParamField>
+
+<ParamField path="obstacleHeightMultiplier" type="number" default="0.85">
+  Base height multiplier: `f * h * 0.85 + Math.random() * h * 0.15`.
+</ParamField>
+
+<ParamField path="maxSingleObstacleHeight" type="number" default="H * 0.6">
+  Maximum height for unpaired obstacles (60% of screen).
+</ParamField>
+
+<ParamField path="initialObstacleCount" type="number" default="6">
+  Number of obstacles generated at game start.
+</ParamField>
+
+<ParamField path="obstacleSpawnDistance" type="number" default="W + 400">
+  Distance ahead of screen to generate new obstacles.
+</ParamField>
+
+<ParamField path="initialObstacleDistance" type="number" default="W + 250">
+  Starting X position for first obstacle.
+</ParamField>
+
+### Opacity and Reveal
+
+<ParamField path="obstacleRevealDuration" type="number" default="100">
+  Frames obstacle stays visible after pulse hit.
+</ParamField>
+
+<ParamField path="obstacleFadeSpeed" type="number" default="0.004">
+  Opacity decrease per frame when not revealed.
+</ParamField>
+
+<ParamField path="crashRevealSpeed" type="number" default="0.025">
+  Opacity increase per frame during crash state.
+</ParamField>
+
+---
+
+## Particles
+
+<ParamField path="particleSpawnProbability" type="number" default="0.7">
+  Probability of spawning trail particle each frame: `Math.random() > 0.3`.
+</ParamField>
+
+<ParamField path="particleMaxCount" type="number" default="80">
+  Maximum particles in array at once.
+</ParamField>
+
+<ParamField path="particleSpawnX" type="number" default="player.x + 4">
+  X offset from player position.
+</ParamField>
+
+<ParamField path="particleSpawnYVariance" type="string" default="(Math.random() - 0.5) * 8">
+  Y variance around player center: ±4 pixels.
+</ParamField>
+
+<ParamField path="particleSizeRange" type="string" default="1.5 + Math.random() * 2">
+  Initial size: 1.5-3.5 pixels.
+</ParamField>
+
+<ParamField path="particleAlphaStart" type="number" default="0.5">
+  Initial opacity.
+</ParamField>
+
+<ParamField path="particleAlphaDecay" type="number" default="0.01">
+  Alpha decrease per frame.
+</ParamField>
+
+<ParamField path="particleSizeDecay" type="number" default="0.997">
+  Size multiplier per frame.
+</ParamField>
+
+<ParamField path="particleVxRange" type="string" default="-0.8 - Math.random() * 0.5">
+  Horizontal velocity: -1.3 to -0.8.
+</ParamField>
+
+<ParamField path="particleVyRange" type="string" default="(Math.random() - 0.5) * 0.4">
+  Vertical velocity: -0.2 to 0.2.
+</ParamField>
+
+<ParamField path="particleColor" type="string" default="#6d3bbd">
+  Purple trail color.
+</ParamField>
+
+---
+
+## Screen Shake
+
+<ParamField path="shake.decay" type="number" default="0.86">
+  Intensity multiplier per frame.
+</ParamField>
+
+<ParamField path="shakeStopThreshold" type="number" default="0.2">
+  Intensity below which shake stops.
+</ParamField>
+
+<ParamField path="shakeCrashIntensity" type="number" default="14">
+  Shake intensity on collision.
+</ParamField>
+
+<ParamField path="shakeFireballIntensity" type="number" default="8">
+  Shake intensity when firing fireball.
+</ParamField>
+
+<ParamField path="shakePulseIntensity" type="number" default="4">
+  Shake intensity on normal pulse or powerup collection.
+</ParamField>
+
+<ParamField path="shakeAmplitudeMultiplier" type="number" default="1.5">
+  Translation distance: `(Math.random() - 0.5) * shake.i * 1.5`.
+</ParamField>
+
+---
+
+## Sonar Visualization
+
+<ParamField path="sonarBarCount" type="number" default="48">
+  Number of bars in sonar waveform.
+</ParamField>
+
+<ParamField path="sonarEnergyDecay" type="number" default="0.94">
+  Energy multiplier per frame.
+</ParamField>
+
+<ParamField path="sonarBarDecay" type="number" default="0.87">
+  Individual bar value decay multiplier.
+</ParamField>
+
+<ParamField path="sonarBarAmplitude" type="number" default="16">
+  Maximum bar height in pixels: `Math.abs(sonar.bars[i]) * 16`.
+</ParamField>
+
+<ParamField path="sonarBarBaseAlpha" type="number" default="0.1">
+  Minimum bar opacity.
+</ParamField>
+
+<ParamField path="sonarBarMaxAlpha" type="number" default="0.7">
+  Maximum bar opacity: `Math.min(0.7, 0.1 + Math.abs(sonar.bars[i]) * 3)`.
+</ParamField>
+
+<ParamField path="sonarBaseY" type="number" default="H - 22">
+  Baseline Y position for sonar bars.
+</ParamField>
+
+---
+
+## Timing & Crash
+
+<ParamField path="STATE.crashDuration" type="number" default="80">
+  Total frames for crash animation.
+</ParamField>
+
+<ParamField path="crashTextFadeThreshold" type="number" default="20">
+  Frames remaining when crash text starts appearing.
+</ParamField>
+
+<ParamField path="crashFlashThreshold" type="number" default="20">
+  Frames remaining when red flash ends.
+</ParamField>
+
+---
+
+## Visual Constants
+
+### Colors
+
+<ParamField path="backgroundColor" type="string" default="#08081a">
+  Main background color (dark blue-black).
+</ParamField>
+
+<ParamField path="gridColor" type="string" default="rgba(100, 50, 160, 0.04)">
+  Subtle background grid lines.
+</ParamField>
+
+<ParamField path="obstacleFillColor" type="string" default="rgba(30, 10, 60, [opacity * 0.5])">
+  Obstacle interior color.
+</ParamField>
+
+<ParamField path="obstacleStrokeColor" type="string" default="rgba(120, 50, 200, [opacity * 0.8])">
+  Obstacle outline color.
+</ParamField>
+
+<ParamField path="immunityShieldColor" type="string" default="#39ff14">
+  Bright green immunity aura.
+</ParamField>
+
+### Grid
+
+<ParamField path="gridSpacing" type="number" default="60">
+  Distance between grid lines in pixels.
+</ParamField>
+
+<ParamField path="gridParallaxSpeed" type="number" default="0.3">
+  Grid scroll multiplier: `(-scrollX * 0.3) % 60`.
+</ParamField>
+
+### Dragon Rendering
+
+<ParamField path="dragonRenderWidth" type="number" default="player.width + 16">
+  Visual width (larger than hitbox).
+</ParamField>
+
+<ParamField path="dragonRenderHeight" type="number" default="player.height + 12">
+  Visual height (larger than hitbox).
+</ParamField>
+
+### HUD
+
+<ParamField path="hudPrimaryColor" type="string" default="#9b7cc8">
+  Main HUD text color.
+</ParamField>
+
+<ParamField path="hudSecondaryColor" type="string" default="#5a3d8a66">
+  Secondary/faded HUD text.
+</ParamField>
+
+<ParamField path="plasmaBarWidth" type="number" default="140">
+  Pulse energy bar width.
+</ParamField>
+
+<ParamField path="plasmaBarHeight" type="number" default="8">
+  Pulse energy bar height.
+</ParamField>
+
+<ParamField path="plasmaBarColor" type="string" default="#5c2d91">
+  Filled portion of energy bar.
+</ParamField>
+
+<ParamField path="plasmaBarBgColor" type="string" default="#12081e">
+  Empty portion of energy bar.
+</ParamField>
+
+---
+
+## Audio
+
+<ParamField path="pulseSound.src" type="string" default="/fah.mp3">
+  Sound effect played when firing pulse.
+</ParamField>
+
+<ParamField path="pulseSound.volume" type="number" default="0.5">
+  Audio volume (0.0 to 1.0).
+</ParamField>
+
+---
+
+## Assets
+
+<ParamField path="dragonImg.src" type="string" default="/dragon.png">
+  Dragon sprite image path.
+</ParamField>

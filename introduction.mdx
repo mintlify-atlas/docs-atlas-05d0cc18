@@ -1,0 +1,171 @@
+---
+title: Night Fury Radar
+description: Fly blind. Pulse to see. Navigate pitch-black caves using sonar in this atmospheric survival game.
+mode: custom
+---
+
+<div className="relative py-20 overflow-hidden bg-gradient-to-br from-[#0f1117] via-[#1a0b2e] to-[#0f1117] dark:from-[#0f1117] dark:via-[#1a0b2e] dark:to-[#0f1117] bg-white dark:bg-[#0f1117]">
+  <div className="absolute inset-0 opacity-20">
+    <div className="absolute inset-0" style={{
+      backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(168, 85, 247, 0.15) 1px, transparent 0)',
+      backgroundSize: '60px 60px'
+    }}></div>
+  </div>
+  
+  <div className="relative max-w-6xl mx-auto px-6 lg:px-8">
+    <div className="text-center">
+      <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-white mb-6">
+        Night Fury Radar
+      </h1>
+      
+      <p className="text-xl sm:text-2xl text-gray-300 dark:text-gray-300 max-w-3xl mx-auto mb-4">
+        An atmospheric side-scrolling survival game where you fly blind and pulse sonar to navigate pitch-black caves.
+      </p>
+      
+      <p className="text-base sm:text-lg text-gray-400 dark:text-gray-400 max-w-2xl mx-auto mb-10">
+        Control Toothless through procedurally generated caverns using sonar pulse mechanics. Collect powerups, avoid obstacles, and master the darkness.
+      </p>
+      
+      <div className="flex flex-wrap gap-4 justify-center items-center">
+        <a
+          href="/quickstart"
+          className="px-8 py-3.5 bg-[#a855f7] hover:bg-[#9333ea] text-white font-semibold rounded-lg transition-colors shadow-lg shadow-purple-500/25"
+        >
+          Get started
+        </a>
+        <a
+          href="/gameplay/mechanics"
+          className="px-8 py-3.5 border-2 border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/40 text-white font-semibold rounded-lg transition-all"
+        >
+          Learn mechanics
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">
+    Quick start
+  </h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8">
+    Get the game running locally in minutes
+  </p>
+
+  <Steps>
+    <Step title="Clone the repository">
+      Clone the Night Fury Radar repository to your local machine:
+      
+      ```bash
+      git clone https://github.com/ohhmkar/code-it-ralph-26.git
+      cd code-it-ralph-26
+      ```
+    </Step>
+    
+    <Step title="Install dependencies">
+      Install the required packages using your preferred package manager:
+      
+      ```bash npm
+      npm install
+      ```
+      
+      The game uses Next.js 16, React 19, and Three.js for 3D rendering capabilities.
+    </Step>
+    
+    <Step title="Start the development server">
+      Launch the game in development mode:
+      
+      ```bash
+      npm run dev
+      ```
+      
+      Open [http://localhost:3000](http://localhost:3000) in your browser to play. The game runs entirely in the browser using Canvas API.
+    </Step>
+    
+    <Step title="Play the game">
+      Press **Space** to start flying and fire sonar pulses. Use **WASD** or arrow keys to navigate. The darkness is intentional — pulse frequently to reveal obstacles!
+      
+      <Tip>Your first few runs will likely end in crashes. That's normal! The game rewards patience and rhythm as you learn to "see" with sound.</Tip>
+    </Step>
+  </Steps>
+</div>
+
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">
+    Core features
+  </h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8">
+    Explore what makes Night Fury Radar unique
+  </p>
+
+  <CardGroup cols={2}>
+    <Card title="Sonar pulse mechanics" icon="radio" href="/gameplay/mechanics">
+      Navigate pitch-black caves by firing sonar pulses that temporarily reveal obstacles. Manage your energy carefully.
+    </Card>
+    <Card title="Dynamic difficulty" icon="chart-line" href="/reference/game-state">
+      Difficulty scales based on your position and speed. The further you fly, the faster obstacles approach.
+    </Card>
+    <Card title="Powerup system" icon="star" href="/gameplay/powerups">
+      Collect Immunity, Fireball, and Plasma powerups strategically placed in challenging positions.
+    </Card>
+    <Card title="Procedural generation" icon="wand-magic-sparkles" href="/development/architecture">
+      Every playthrough features uniquely generated cave systems with varied obstacle patterns.
+    </Card>
+    <Card title="Canvas rendering" icon="paintbrush" href="/development/rendering">
+      High-performance 2D canvas rendering with particle effects, screen shake, and smooth animations.
+    </Card>
+    <Card title="Keyboard controls" icon="keyboard" href="/gameplay/controls">
+      Responsive WASD/arrow key flight controls with space bar sonar pulses and ESC pause menu.
+    </Card>
+  </CardGroup>
+</div>
+
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">
+    Documentation sections
+  </h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8">
+    Find what you need to play, modify, or understand the game
+  </p>
+
+  <CardGroup cols={2}>
+    <Card title="Gameplay guide" icon="gamepad" href="/gameplay/controls">
+      Master the controls, mechanics, and powerup strategies to survive longer runs.
+    </Card>
+    <Card title="Development guide" icon="code" href="/development/setup">
+      Learn the architecture, rendering pipeline, and how to modify the game.
+    </Card>
+    <Card title="Game state reference" icon="database" href="/reference/game-state">
+      Complete reference of player state, pulse system, obstacles, and game modes.
+    </Card>
+    <Card title="Configuration" icon="gear" href="/reference/configuration">
+      Tweak difficulty parameters, visual effects, and gameplay constants.
+    </Card>
+  </CardGroup>
+</div>
+
+<div className="mt-20 mb-16 max-w-4xl mx-auto px-6">
+  <div className="relative rounded-2xl border-2 border-[#a855f7]/20 dark:border-[#a855f7]/20 bg-gradient-to-br from-[#a855f7]/5 to-[#7c3aed]/5 dark:from-[#a855f7]/5 dark:to-[#7c3aed]/5 p-8 sm:p-12 text-center overflow-hidden">
+    <div className="absolute inset-0 opacity-10">
+      <div className="absolute inset-0" style={{
+        backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(168, 85, 247, 0.3) 1px, transparent 0)',
+        backgroundSize: '40px 40px'
+      }}></div>
+    </div>
+    
+    <div className="relative">
+      <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+        Ready to fly?
+      </h2>
+      <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-8">
+        Jump into the darkness and master the art of sonar navigation. The caves are waiting.
+      </p>
+      <a
+        href="/quickstart"
+        className="inline-block px-8 py-3.5 bg-[#a855f7] hover:bg-[#9333ea] text-white font-semibold rounded-lg transition-colors shadow-lg shadow-purple-500/25"
+      >
+        Start playing
+      </a>
+    </div>
+  </div>
+</div>

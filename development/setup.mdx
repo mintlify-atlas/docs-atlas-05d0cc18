@@ -1,0 +1,256 @@
+---
+title: Development Setup
+description: Set up your development environment and understand the project structure
+---
+
+## Prerequisites
+
+Before starting development on Night Fury Radar, ensure you have the following installed:
+
+- **Node.js** 16.x or higher
+- **npm** or **yarn** package manager
+
+## Installation
+
+<Steps>
+  <Step title="Clone the repository">
+    ```bash
+    git clone <repository-url>
+    cd night-fury-radar
+    ```
+  </Step>
+  
+  <Step title="Install dependencies">
+    ```bash
+    npm install
+    ```
+    
+    This will install the following core dependencies:
+    - **Next.js** 16.1.6 - React framework
+    - **React** 19.2.3 - UI library
+    - **@react-three/fiber** & **@react-three/drei** - 3D graphics support
+    - **Three.js** 0.182.0 - WebGL library
+  </Step>
+  
+  <Step title="Run the development server">
+    ```bash
+    npm run dev
+    ```
+    
+    The game will be available at [http://localhost:3000](http://localhost:3000)
+  </Step>
+</Steps>
+
+## Project Structure
+
+The project follows Next.js App Router conventions:
+
+```
+night-fury-radar/
+├── app/
+│   ├── components/
+│   │   └── NightFuryRadar.js    # Main game component
+│   ├── layout.js                # Root layout
+│   ├── page.js                  # Home page
+│   ├── globals.css              # Global styles
+│   └── favicon.ico
+├── public/
+│   ├── dragon.png               # Dragon sprite asset
+│   ├── fah.mp3                  # Sonar pulse sound
+│   └── *.svg                    # UI icons
+├── package.json
+└── next.config.mjs
+```
+
+### Key Files
+
+<CardGroup cols={2}>
+  <Card title="NightFuryRadar.js" icon="gamepad">
+    **Location**: `app/components/NightFuryRadar.js`
+    
+    The core game implementation containing all game logic, rendering, and state management.
+  </Card>
+  
+  <Card title="Assets" icon="image">
+    **Location**: `public/`
+    
+    Game assets including the dragon sprite (`dragon.png`) and sonar sound effect (`fah.mp3`).
+  </Card>
+</CardGroup>
+
+## Build Process
+
+### Development Build
+
+```bash
+npm run dev
+```
+
+Runs Next.js in development mode with:
+- Hot module replacement
+- Source maps for debugging
+- Fast refresh for React components
+
+### Production Build
+
+```bash
+npm run build
+npm start
+```
+
+Creates an optimized production build with:
+- Minified JavaScript bundles
+- Optimized React components
+- Server-side rendering support
+
+## Development Environment
+
+<Note>
+  The game uses a client-side only component (`"use client"` directive) since it relies on browser APIs like Canvas and Audio.
+</Note>
+
+### Canvas Setup
+
+The game automatically resizes to fit the browser window:
+
+```javascript app/components/NightFuryRadar.js:1027-1032
+const resize = () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+};
+resize();
+window.addEventListener("resize", resize);
+```
+
+### Component Lifecycle
+
+The game initializes in a React `useEffect` hook:
+
+```javascript app/components/NightFuryRadar.js:1023-1040
+useEffect(() => {
+  const canvas = canvasRef.current;
+  if (!canvas) return;
+
+  const resize = () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  };
+  resize();
+  window.addEventListener("resize", resize);
+
+  const cleanup = initGame(canvas);
+  gameRef.current = cleanup;
+  return () => {
+    window.removeEventListener("resize", resize);
+    if (gameRef.current) gameRef.current();
+  };
+}, [initGame]);
+```
+
+## Configuration
+
+### Game Constants
+
+Key difficulty and gameplay parameters are defined at the top of `NightFuryRadar.js`:
+
+<CodeGroup>
+```javascript Player Settings
+const player = {
+  x: W * 0.22,
+  y: H / 2,
+  vy: 0,
+  vx: 0,
+  baseSpeed: 4.5,      // Base scrolling speed
+  width: 56,
+  height: 32,
+  gravity: 0.13,       // Downward acceleration
+  lift: -0.48,         // Upward thrust
+  drag: 0.96,          // Vertical drag
+  dragX: 0.93,         // Horizontal drag
+};
+```
+
+```javascript Pulse Settings
+const pulse = {
+  energy: 100,
+  max: 100,
+  cost: 22,            // Energy cost per pulse
+  rechargeBase: 0.09,  // Base recharge rate
+  rechargeFast: 0.22,  // Fast recharge at high speed
+};
+```
+
+```javascript Obstacle Settings
+const GAP = 220;       // Distance between obstacles
+let nextObs = W + 250; // Position of next obstacle
+```
+</CodeGroup>
+
+<Tip>
+  Adjust these constants to modify game difficulty and feel. Lower `GAP` values make the game harder, while higher `player.baseSpeed` increases challenge.
+</Tip>
+
+## Debugging Tips
+
+<AccordionGroup>
+  <Accordion title="View current game state">
+    Add a console log in the `update()` function to track state:
+    
+    ```javascript
+    console.log({
+      mode: STATE.mode,
+      score: STATE.score,
+      playerY: player.y,
+      scrollX: scrollX,
+      obstacleCount: obstacles.length
+    });
+    ```
+  </Accordion>
+  
+  <Accordion title="Visualize collision hitboxes">
+    Add debug rendering in the `drawGame()` function:
+    
+    ```javascript
+    // Draw player hitbox
+    ctx.strokeStyle = 'red';
+    ctx.strokeRect(player.x, player.y, player.width, player.height);
+    
+    // Draw obstacle polygons
+    for (const ob of obstacles) {
+      ctx.beginPath();
+      ob.points.forEach((pt, i) => {
+        if (i === 0) ctx.moveTo(pt.x - scrollX, pt.y);
+        else ctx.lineTo(pt.x - scrollX, pt.y);
+      });
+      ctx.closePath();
+      ctx.stroke();
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Slow down game speed">
+    Reduce the `requestAnimationFrame` rate for easier debugging:
+    
+    ```javascript
+    function loop() {
+      setTimeout(() => {
+        update();
+        draw();
+        animFrameRef.current = requestAnimationFrame(loop);
+      }, 100); // Run at ~10 FPS instead of 60 FPS
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Architecture" icon="diagram-project" href="/development/architecture">
+    Learn about the game's architecture and state management
+  </Card>
+  
+  <Card title="Rendering" icon="paintbrush" href="/development/rendering">
+    Understand the canvas rendering pipeline and visual effects
+  </Card>
+</CardGroup>

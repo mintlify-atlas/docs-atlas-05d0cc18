@@ -1,0 +1,349 @@
+---
+title: 'Game State Reference'
+description: 'Complete reference of all state objects and their properties'
+---
+
+## Overview
+
+Night Fury Radar manages game state through several interconnected objects. This page documents every state property, its type, and default values extracted from the source code.
+
+---
+
+## STATE Object
+
+The main game state controller that manages game modes, scoring, and UI states.
+
+<ParamField path="mode" type="string" default="START">
+  Current game mode. Valid values:
+  - `"START"` - Main menu screen
+  - `"PLAY"` - Active gameplay
+  - `"PAUSED"` - Game paused
+  - `"CRASH"` - Crash animation and game over state
+</ParamField>
+
+<ParamField path="score" type="number" default="0">
+  Current score calculated as `Math.floor(scrollX / 10)`. Increases as the player progresses.
+</ParamField>
+
+<ParamField path="highScore" type="number" default="0">
+  Best score achieved in the current session. Updated when player crashes with a higher score.
+</ParamField>
+
+<ParamField path="crashTimer" type="number" default="0">
+  Countdown timer during crash state. Starts at `crashDuration` and decrements to 0.
+</ParamField>
+
+<ParamField path="crashDuration" type="number" default="80">
+  Total frames the crash animation lasts. Fixed at 80 frames.
+</ParamField>
+
+<ParamField path="pauseSelection" type="number" default="0">
+  Currently selected menu item in pause screen:
+  - `0` = Resume
+  - `1` = Restart  
+  - `2` = Main Menu
+</ParamField>
+
+---
+
+## player Object
+
+Controls the dragon's position, velocity, and movement physics.
+
+<ParamField path="x" type="number" default="W * 0.22">
+  Horizontal position in pixels. Calculated as 22% of canvas width. Constrained between `40` and `W * 0.65`.
+</ParamField>
+
+<ParamField path="y" type="number" default="H / 2">
+  Vertical position in pixels. Starts at vertical center of canvas.
+</ParamField>
+
+<ParamField path="vy" type="number" default="0">
+  Vertical velocity. Modified by gravity, lift, and drag forces.
+</ParamField>
+
+<ParamField path="vx" type="number" default="0">
+  Horizontal velocity. Modified by player input and horizontal drag.
+</ParamField>
+
+<ParamField path="baseSpeed" type="number" default="4.5">
+  Base scrolling speed of the world. Higher difficulty setting (was 3.2 in easier version).
+</ParamField>
+
+<ParamField path="width" type="number" default="56">
+  Dragon collision box width in pixels.
+</ParamField>
+
+<ParamField path="height" type="number" default="32">
+  Dragon collision box height in pixels.
+</ParamField>
+
+<ParamField path="gravity" type="number" default="0.13">
+  Constant downward acceleration applied each frame.
+</ParamField>
+
+<ParamField path="lift" type="number" default="-0.48">
+  Upward acceleration when up key is pressed (negative because y-axis is inverted). Down key applies `lift * 0.7`.
+</ParamField>
+
+<ParamField path="drag" type="number" default="0.96">
+  Vertical velocity multiplier applied each frame. Value < 1 creates deceleration.
+</ParamField>
+
+<ParamField path="dragX" type="number" default="0.93">
+  Horizontal velocity multiplier applied each frame. More aggressive than vertical drag.
+</ParamField>
+
+---
+
+## pulse Object
+
+Manages the sonar pulse energy system.
+
+<ParamField path="energy" type="number" default="100">
+  Current pulse energy level. Starts at maximum.
+</ParamField>
+
+<ParamField path="max" type="number" default="100">
+  Maximum pulse energy capacity.
+</ParamField>
+
+<ParamField path="cost" type="number" default="22">
+  Energy consumed when firing a pulse. Player cannot fire if `energy < cost`.
+</ParamField>
+
+<ParamField path="rechargeBase" type="number" default="0.09">
+  Energy recharged per frame at normal speed (when `speedF <= 2`).
+</ParamField>
+
+<ParamField path="rechargeFast" type="number" default="0.22">
+  Energy recharged per frame at high speed (when `speedF > 2`).
+</ParamField>
+
+---
+
+## pulses Array
+
+Array of active pulse ring objects. Each pulse has:
+
+<ParamField path="x" type="number">
+  X-coordinate of pulse origin (player center when fired).
+</ParamField>
+
+<ParamField path="y" type="number">
+  Y-coordinate of pulse origin (player center when fired).
+</ParamField>
+
+<ParamField path="r" type="number" default="80">
+  Current radius of expanding pulse. Starts at 80 for instant visibility.
+</ParamField>
+
+<ParamField path="maxR" type="number" default="650">
+  Maximum radius before pulse is removed. Fireballs use 400.
+</ParamField>
+
+<ParamField path="a" type="number" default="1">
+  Alpha/opacity calculated as `1 - r / maxR`. Fades as pulse expands.
+</ParamField>
+
+<ParamField path="w" type="number" default="4">
+  Line width for rendering. Fireballs use 6.
+</ParamField>
+
+<ParamField path="hue" type="number" default="260 + Math.random() * 40">
+  HSL hue value for pulse color. Normal pulses: 260-300 (purple range). Fireballs: 0 (red).
+</ParamField>
+
+<ParamField path="isFireball" type="boolean" default="false">
+  Whether this pulse is a fireball. Fireballs expand faster (14 vs 12) and destroy obstacles.
+</ParamField>
+
+---
+
+## obstacles Array
+
+Array of obstacle pillar objects. Each obstacle has:
+
+<ParamField path="x" type="number">
+  World X-position of the obstacle (not affected by scrollX directly).
+</ParamField>
+
+<ParamField path="w" type="number" default="55 + Math.random() * 70">
+  Width of the pillar. Random value between 55 and 125 pixels.
+</ParamField>
+
+<ParamField path="h" type="number">
+  Height of the pillar. Varies based on pillar type:
+  - Single pillars: `minH` to `H * 0.6`
+  - Paired pillars: `minH` to `Math.max(minH, H - pairH - player.height * 3.8)`
+  - Where `minH = 60`
+</ParamField>
+
+<ParamField path="points" type="array">
+  Array of `{x, y}` coordinate objects defining the pillar polygon shape. Contains 12+ points (2 corners + 10 segments + 1 closure).
+</ParamField>
+
+<ParamField path="opacity" type="number" default="0">
+  Current visibility opacity (0-1). Obstacles start invisible and are revealed by pulses.
+</ParamField>
+
+<ParamField path="revealT" type="number" default="0">
+  Reveal timer. Set to 100 when hit by pulse, decrements each frame. Controls opacity fade.
+</ParamField>
+
+<ParamField path="isTop" type="boolean">
+  Whether this pillar extends from the top of the screen (true) or bottom (false).
+</ParamField>
+
+<ParamField path="destroyed" type="boolean" default="false">
+  Whether this obstacle was destroyed by a fireball. Destroyed obstacles are invisible and don't cause collisions.
+</ParamField>
+
+---
+
+## powerups Array
+
+Array of collectible powerup objects. Each powerup has:
+
+<ParamField path="x" type="number">
+  World X-position of the powerup.
+</ParamField>
+
+<ParamField path="y" type="number">
+  Y-coordinate of the powerup. Calculated to be in safe zones between obstacles.
+</ParamField>
+
+<ParamField path="powerupType" type="string">
+  Type identifier: `"immunity"`, `"fireball"`, or `"plasma"`.
+</ParamField>
+
+<ParamField path="color" type="string">
+  Hex color code:
+  - Immunity: `"#39ff14"` (bright green)
+  - Fireball: `"#ff4444"` (red)
+  - Plasma: `"#44aaff"` (blue)
+</ParamField>
+
+<ParamField path="symbol" type="string">
+  Display symbol:
+  - Immunity: `"◆"`
+  - Fireball: `"◉"`
+  - Plasma: `"◈"`
+</ParamField>
+
+<ParamField path="pulse" type="number" default="0">
+  Animation phase value. Increments by 0.08 each frame for pulsing scale/alpha effects.
+</ParamField>
+
+---
+
+## activePowerups Object
+
+Tracks currently active powerup effects.
+
+### activePowerups.immunity
+
+<ParamField path="active" type="boolean" default="false">
+  Whether immunity is currently protecting the player.
+</ParamField>
+
+<ParamField path="timer" type="number" default="0">
+  Frames remaining for immunity effect. Decrements each frame when active.
+</ParamField>
+
+<ParamField path="duration" type="number" default="180">
+  Total frames immunity lasts when activated (3 seconds at 60 FPS).
+</ParamField>
+
+### activePowerups.fireball
+
+<ParamField path="active" type="boolean" default="false">
+  Whether next pulse will be a fireball. Single-use, set to false after firing.
+</ParamField>
+
+<ParamField path="timer" type="number" default="0">
+  Unused for fireball (instant use item).
+</ParamField>
+
+---
+
+## particles Array
+
+Array of trail particle objects. Each particle has:
+
+<ParamField path="x" type="number">
+  X-coordinate of particle. Spawns at `player.x + 4`.
+</ParamField>
+
+<ParamField path="y" type="number">
+  Y-coordinate of particle. Spawns near player vertical center with ±4px randomization.
+</ParamField>
+
+<ParamField path="a" type="number" default="0.5">
+  Alpha/opacity. Starts at 0.5, decreases by 0.01 per frame.
+</ParamField>
+
+<ParamField path="s" type="number" default="1.5 + Math.random() * 2">
+  Size/radius in pixels. Random between 1.5 and 3.5. Multiplied by 0.997 each frame.
+</ParamField>
+
+<ParamField path="vx" type="number" default="-0.8 - Math.random() * 0.5">
+  X-velocity (moves left). Random between -1.3 and -0.8.
+</ParamField>
+
+<ParamField path="vy" type="number" default="(Math.random() - 0.5) * 0.4">
+  Y-velocity (slight vertical drift). Random between -0.2 and 0.2.
+</ParamField>
+
+---
+
+## shake Object
+
+Controls screen shake effects.
+
+<ParamField path="i" type="number" default="0">
+  Shake intensity in pixels. Set to specific values on events:
+  - `14` on crash
+  - `8` on fireball
+  - `4` on normal pulse or powerup collection
+</ParamField>
+
+<ParamField path="decay" type="number" default="0.86">
+  Multiplier applied to intensity each frame. Shake stops when `i < 0.2`.
+</ParamField>
+
+---
+
+## sonar Object
+
+Visual sonar waveform display state.
+
+<ParamField path="bars" type="array" default="new Array(48).fill(0)">
+  Array of 48 bar height values for the bottom sonar visualization.
+</ParamField>
+
+<ParamField path="energy" type="number" default="0">
+  Sonar energy level. Set to 1 when pulse fires, decays by factor of 0.94 each frame.
+</ParamField>
+
+---
+
+## World State Variables
+
+Global variables tracking world progression:
+
+<ParamField path="scrollX" type="number" default="0">
+  Total horizontal world scroll distance. Incremented by `player.baseSpeed * speedF` each frame.
+</ParamField>
+
+<ParamField path="nextObs" type="number" default="W + 250">
+  World X-position where the next obstacle will be generated.
+</ParamField>
+
+<ParamField path="nextPowerup" type="number" default="W + 500">
+  World X-position where the next powerup will be generated.
+</ParamField>
+
+<ParamField path="keys" type="object" default="{}">
+  Object tracking pressed keys. Keys are key codes (e.g., `"Space"`, `"ArrowUp"`), values are booleans.
+</ParamField>

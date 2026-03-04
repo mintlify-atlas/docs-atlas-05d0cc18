@@ -1,80 +1,164 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: 'Quick Start'
+description: 'Get Night Fury Radar running locally in minutes'
 ---
 
-## Get started in three steps
+Night Fury Radar is a Next.js-based sonar exploration game. Follow these steps to get up and running.
 
-Get your documentation site running locally and make your first customization.
+## Prerequisites
 
-### Step 1: Set up your local environment
+Before you begin, ensure you have the following installed:
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
-
-<CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
-</CardGroup>
+- **Node.js** 16.x or higher
+- **npm** (comes with Node.js)
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  This project uses Next.js 16.1.6 with React 19.2.3 and React Three Fiber for 3D rendering.
 </Note>
+
+## Installation
+
+<Steps>
+  <Step title="Clone the repository">
+    Clone the Night Fury Radar repository to your local machine:
+
+    ```bash
+    git clone <repository-url>
+    cd night-fury-radar
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    Install all required packages using npm:
+
+    ```bash
+    npm install
+    ```
+
+    This will install:
+    - `next` (16.1.6) - The React framework
+    - `react` and `react-dom` (19.2.3) - React libraries
+    - `@react-three/fiber` (^9.5.0) - React renderer for Three.js
+    - `@react-three/drei` (^10.7.7) - Useful helpers for React Three Fiber
+    - `three` (^0.182.0) - 3D library
+  </Step>
+
+  <Step title="Start the development server">
+    Launch the development server:
+
+    ```bash
+    npm run dev
+    ```
+
+    The server will start on `http://localhost:3000`
+  </Step>
+
+  <Step title="Open in your browser">
+    Navigate to [http://localhost:3000](http://localhost:3000) to see the game.
+
+    You should see the Night Fury Radar start screen with the title and controls.
+  </Step>
+</Steps>
+
+## First Play
+
+Once the game loads, you'll see the start screen with control instructions.
+
+### Game Controls
+
+<CodeGroup>
+```text Movement
+[W A S D]  or  [↑ ↓ ← →]  —  FLY
+  W/↑  - Fly up
+  S/↓  - Fly down  
+  A/←  - Fly left
+  D/→  - Fly right
+```
+
+```text Actions
+[SPACE]  —  SONAR PULSE
+Fire a sonar pulse to reveal obstacles
+
+[ESC]  —  PAUSE
+Pause the game and access menu
+```
+</CodeGroup>
+
+### How to Play
+
+1. **Press SPACE** on the start screen to begin
+2. **Navigate** using WASD or arrow keys to avoid obstacles
+3. **Fire sonar pulses** with SPACE to reveal hidden obstacles in the dark
+4. **Collect powerups** for special abilities:
+   - **◆ Immunity** - Temporary invulnerability (green)
+   - **◉ Fireball** - Destroy obstacles with your next pulse (red)
+   - **◈ Plasma** - Instantly restore pulse energy (blue)
+
+<Tip>
+  Watch your plasma energy bar in the top right - you need energy to fire sonar pulses. It recharges automatically, faster when you're moving quickly.
+</Tip>
+
+### Game Mechanics
+
+The game is located in `app/components/NightFuryRadar.js` and features:
+
+- **Canvas-based rendering** - Full-screen HTML5 canvas with 2D context
+- **Dynamic obstacles** - Procedurally generated pillars with varying heights and gaps
+- **Sonar system** - Fire pulses to temporarily reveal obstacles (lines 232-274)
+- **Powerup system** - Three types of collectible powerups (lines 69-80)
+- **Score tracking** - Distance-based scoring with high score persistence
+
+<Warning>
+  The game difficulty increases as you move forward - scroll speed scales with your position (line 377), and obstacles become more frequent and challenging.
+</Warning>
+
+## Project Structure
+
+```
+night-fury-radar/
+├── app/
+│   ├── components/
+│   │   └── NightFuryRadar.js    # Main game component
+│   ├── page.js                  # Home page
+│   ├── layout.js                # Root layout
+│   └── globals.css              # Global styles
+├── public/
+│   ├── dragon.png               # Dragon sprite
+│   └── fah.mp3                  # Sonar pulse sound
+├── package.json                 # Dependencies & scripts
+└── next.config.mjs              # Next.js configuration
+```
+
+## Available Scripts
+
+<CodeGroup>
+```bash Development
+npm run dev
+# Start development server on localhost:3000
+# Hot reloading enabled
+```
+
+```bash Production Build
+npm run build
+# Create optimized production build
+```
+
+```bash Production Server
+npm run start
+# Start production server
+# Must run 'npm run build' first
+```
+</CodeGroup>
+
+## Next Steps
+
+Now that you have the game running:
+
+- Explore the **game mechanics** in `app/components/NightFuryRadar.js`
+- Customize **obstacles** by modifying the `makePillar` function (lines 132-169)
+- Adjust **difficulty** by changing constants like `GAP` (line 62) and `baseSpeed` (line 40)
+- Add **new powerup types** to the `POWERUP_TYPES` object (lines 76-80)
+
+<Tip>
+  Try beating the high score! The game tracks your best distance and displays it on the start screen.
+</Tip>

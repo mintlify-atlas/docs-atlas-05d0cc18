@@ -1,0 +1,364 @@
+---
+title: Powerups
+description: Collectible powerups and their effects in Night Fury Radar
+icon: sparkles
+---
+
+## Powerup System Overview
+
+Powerups spawn throughout the game at regular intervals, providing temporary advantages or instant benefits.
+
+### Spawn Mechanics
+
+<ResponseField name="Initial Spawn" type="distance">
+  First powerup spawns at `screenWidth + 500` pixels from start
+</ResponseField>
+
+<ResponseField name="Spawn Interval" type="distance">
+  Subsequent powerups spawn every `600-1000` pixels
+  
+  ```javascript
+  nextPowerup += 600 + random() × 400
+  ```
+</ResponseField>
+
+<ResponseField name="Spawn Algorithm" type="safe positioning">
+  Powerups are placed in safe zones to avoid obstacles:
+  
+  1. Check for nearby obstacles within `±60px` horizontally
+  2. Calculate safe vertical range (`80px` from top/bottom)
+  3. Avoid obstacle heights with `50px` buffer
+  4. Place with `±0.6×` safe range offset from center
+  5. Minimum vertical clearance: `60px`
+</ResponseField>
+
+### Collection Mechanics
+
+<ParamField path="Collection Radius" type="number" default="30">
+  Powerups are collected when the dragon's center point is within 30 pixels:
+  
+  ```javascript
+  distance = sqrt((dragonX - powerupX)² + (dragonY - powerupY)²)
+  if (distance < 30) {
+    // Collect powerup
+  }
+  ```
+</ParamField>
+
+<Note>
+  Collecting any powerup triggers a screen shake with intensity `4`.
+</Note>
+
+## Powerup Types
+
+There are three distinct powerup types, each with unique visual appearance and effects.
+
+### Immunity
+
+<ParamField path="◆ Immunity" type="Defensive">
+  **Symbol**: `◆` (Diamond)
+  
+  **Color**: `#39ff14` (Neon Green)
+  
+  **Effect**: Complete invulnerability to collisions
+  
+  **Duration**: `180` frames (~3 seconds at 60fps)
+</ParamField>
+
+<Accordion title="Immunity Details">
+  **Visual Indicators:**
+  - Green pulsing shield circle around dragon (35px radius)
+  - Shimmer effect with `sin(time × 0.02)` animation
+  - Shadow blur: `20 × shimmer` intensity
+  - HUD indicator: `"◆ IMMUNITY Xs"` (countdown in seconds)
+  
+  **Mechanics:**
+  - All collision detection is bypassed
+  - Both obstacle and boundary collisions are ignored
+  - Timer decrements by 1 per frame during gameplay
+  - Effect deactivates when timer reaches 0
+  
+  **Code Reference:**
+  ```javascript
+  // Source: NightFuryRadar.js:288-290
+  if (activePowerups.immunity.active) {
+    return false  // No collision possible
+  }
+  ```
+</Accordion>
+
+### Fireball
+
+<ParamField path="◉ Fireball" type="Offensive">
+  **Symbol**: `◉` (Circled Dot)
+  
+  **Color**: `#ff4444` (Bright Red)
+  
+  **Effect**: Next sonar pulse destroys obstacles
+  
+  **Duration**: Single use (consumed on next pulse)
+</ParamField>
+
+<Accordion title="Fireball Details">
+  **Visual Indicators:**
+  - HUD indicator: `"◉ FIREBALL READY"` in red
+  - Pulse color changes to red (hue `0`)
+  - Enhanced screen shake: `8` intensity (vs normal `4`)
+  
+  **Pulse Properties:**
+  - **Starting radius**: `60px` (vs normal `80px`)
+  - **Maximum radius**: `400px` (vs normal `650px`)
+  - **Expansion speed**: `14px/frame` (vs normal `12px/frame`)
+  - **Line width**: `6` (vs normal `4`)
+  
+  **Destruction Mechanics:**
+  When a fireball pulse contacts an obstacle:
+  ```javascript
+  // Source: NightFuryRadar.js:399-402
+  if (pulse.isFireball && distance < pulse.radius) {
+    obstacle.destroyed = true
+    obstacle.opacity = 0
+  }
+  ```
+  
+  **Dual Pulse System:**
+  Firing with Fireball creates TWO pulses:
+  1. Normal purple pulse (for obstacle revelation)
+  2. Red fireball pulse (for destruction)
+  
+  Both pulses emanate from the same point simultaneously.
+</Accordion>
+
+### Plasma
+
+<ParamField path="◈ Plasma" type="Utility">
+  **Symbol**: `◈` (Lozenge)
+  
+  **Color**: `#44aaff` (Bright Blue)
+  
+  **Effect**: Instantly refills energy to maximum
+  
+  **Duration**: Instant (immediate effect)
+</ParamField>
+
+<Accordion title="Plasma Details">
+  **Effect:**
+  ```javascript
+  // Source: NightFuryRadar.js:428-429
+  pulse.energy = pulse.max  // Instant refill to 100
+  ```
+  
+  **Use Cases:**
+  - Emergency energy boost for rapid pulsing
+  - Useful before navigating dense obstacle sections
+  - Allows firing pulse immediately after collection
+  
+  **Strategic Value:**
+  - At base recharge rate (`0.09`/frame), saves ~244 frames of waiting
+  - At fast recharge rate (`0.22`/frame), saves ~100 frames
+  - Equivalent to 4.5 pulses worth of energy (22 per pulse)
+</Accordion>
+
+## Powerup Comparison
+
+<CardGroup cols={3}>
+  <Card title="Immunity" icon="shield" color="#39ff14">
+    **Type**: Defensive
+    
+    **Best For**: Navigating tight gaps or when low on energy
+    
+    **Duration**: 3 seconds
+    
+    **Stacks**: No (resets timer)
+  </Card>
+  
+  <Card title="Fireball" icon="fire" color="#ff4444">
+    **Type**: Offensive
+    
+    **Best For**: Clearing obstacles ahead or emergency escapes
+    
+    **Duration**: Single use
+    
+    **Stacks**: No (overwrites)
+  </Card>
+  
+  <Card title="Plasma" icon="bolt" color="#44aaff">
+    **Type**: Utility
+    
+    **Best For**: Rapid obstacle scanning or exploration
+    
+    **Duration**: Instant
+    
+    **Stacks**: N/A (instant)
+  </Card>
+</CardGroup>
+
+## Visual Appearance
+
+All powerups share a common animated appearance with type-specific colors:
+
+### Animation
+
+<ResponseField name="pulse" type="animation">
+  Powerups have a pulsing scale animation:
+  
+  ```javascript
+  pulse += 0.08 per frame
+  scale = 1 + sin(pulse) × 0.15
+  alpha = 0.7 + sin(pulse × 2) × 0.3
+  ```
+  
+  - **Scale range**: `0.85` to `1.15` (±15%)
+  - **Alpha range**: `0.4` to `1.0`
+  - **Speed**: Completes full cycle every ~79 frames
+</ResponseField>
+
+### Visual Layers
+
+<Steps>
+  <Step title="Outer Glow">
+    Radial gradient from powerup center:
+    
+    - Inner radius: `10px`
+    - Outer radius: `25px`
+    - Inner stop: Color at `67%` opacity
+    - Outer stop: Color at `0%` opacity (transparent)
+  </Step>
+  
+  <Step title="Symbol">
+    Type-specific symbol rendered in center:
+    
+    - Font: `bold 24px "Courier New"`
+    - Color: Powerup type color
+    - Shadow: Matching color, `15px` blur
+    - Alignment: Centered (both axes)
+  </Step>
+</Steps>
+
+## Powerup Strategies
+
+<AccordionGroup>
+  <Accordion title="Energy Conservation">
+    **With Plasma powerups:**
+    
+    - Don't wait for full energy recharge
+    - Collect Plasma, then pulse aggressively
+    - Use saved time to focus on navigation
+    
+    **Without Plasma:**
+    - Space pulses to maintain minimum energy reserve
+    - Move right to trigger fast recharge (when speed > 2)
+    - Memorize obstacle patterns to reduce pulse frequency
+  </Accordion>
+  
+  <Accordion title="Immunity Timing">
+    **Optimal use cases:**
+    
+    1. **Dense obstacle clusters**: Activate before entering
+    2. **Low energy situations**: Buys 3 seconds of recharge time
+    3. **Unexplored areas**: Safe reconnaissance without pulses
+    4. **High speed**: More valuable when scrolling fast
+    
+    **Duration management:**
+    - 180 frames = ~3 seconds at 60fps
+    - At max speed (14.85 px/frame), covers ~2673 pixels
+    - At base speed (4.5 px/frame), covers ~810 pixels
+  </Accordion>
+  
+  <Accordion title="Fireball Tactics">
+    **Best scenarios:**
+    
+    1. **Narrow gaps**: Destroy one obstacle to widen passage
+    2. **Emergency escapes**: Clear path when trapped
+    3. **Score pushing**: Destroy obstacles blocking forward movement
+    4. **Energy conservation**: Destroy instead of navigating around
+    
+    **Limitations:**
+    - Single use only (plan carefully)
+    - Smaller radius than normal pulse (400px vs 650px)
+    - Consumes 22 energy like normal pulse
+    - Destroyed obstacles don't respawn
+  </Accordion>
+  
+  <Accordion title="Powerup Priority">
+    **Collection priority by situation:**
+    
+    | Situation | 1st Priority | 2nd Priority | 3rd Priority |
+    |-----------|--------------|--------------|---------------|
+    | Low Energy | Plasma | Immunity | Fireball |
+    | Dense Obstacles | Immunity | Fireball | Plasma |
+    | High Speed | Immunity | Plasma | Fireball |
+    | Score Push | Fireball | Plasma | Immunity |
+    | Exploration | Immunity | Plasma | Fireball |
+  </Accordion>
+</AccordionGroup>
+
+## Advanced Mechanics
+
+### Powerup Persistence
+
+<Tabs>
+  <Tab title="Immunity">
+    **Timer-based persistence:**
+    
+    ```javascript
+    activePowerups.immunity = {
+      active: boolean,
+      timer: number,  // Frames remaining
+      duration: 180   // 3 seconds
+    }
+    ```
+    
+    - Decrements every frame during `PLAY` mode
+    - Pauses during `PAUSED` or `CRASH` modes
+    - Collecting another Immunity resets timer to 180
+  </Tab>
+  
+  <Tab title="Fireball">
+    **Flag-based persistence:**
+    
+    ```javascript
+    activePowerups.fireball = {
+      active: boolean,
+      timer: 0  // Not used
+    }
+    ```
+    
+    - Set to `true` on collection
+    - Set to `false` after firing pulse
+    - No timer - persists until used
+    - Collecting another overwrites (no stack)
+  </Tab>
+  
+  <Tab title="Plasma">
+    **Instant effect:**
+    
+    - No persistence tracking
+    - Immediately sets `pulse.energy = 100`
+    - No active powerup state
+    - Can collect multiple for repeated refills
+  </Tab>
+</Tabs>
+
+### Spawn Distance Tracking
+
+Powerup spawning uses absolute world coordinates:
+
+```javascript
+// Initial setup
+nextPowerup = screenWidth + 500
+
+// During gameplay
+while (nextPowerup - scrollX < screenWidth + 200) {
+  // Spawn powerup at nextPowerup position
+  nextPowerup += 600 + random() × 400
+}
+
+// Cleanup
+powerups = powerups.filter(p => p.x - scrollX > -100)
+```
+
+This ensures:
+- Powerups spawn off-screen to the right
+- Consistent spacing relative to world position
+- Cleanup when powerups scroll off-screen left

@@ -1,0 +1,300 @@
+---
+title: Core Mechanics
+description: Understanding Night Fury Radar's gameplay systems
+icon: gears
+---
+
+## Sonar Pulse System
+
+The core mechanic of Night Fury Radar - obstacles are invisible until revealed by sonar pulses.
+
+### How Pulses Work
+
+<Steps>
+  <Step title="Fire Pulse">
+    Press `SPACE` to emit a sonar pulse from the dragon's center position.
+    
+    **Initial Properties:**
+    - Starting radius: `80` pixels (instant visibility)
+    - Maximum radius: `650` pixels
+    - Expansion speed: `12` pixels per frame
+    - Energy cost: `22` units
+  </Step>
+
+  <Step title="Pulse Expansion">
+    The pulse expands outward as concentric rings.
+    
+    **Visual Effects:**
+    - Multiple rings create warp effect (4 layers)
+    - Ring offset: `6` pixels between layers
+    - Color: Purple/violet hue (`260-300` HSL)
+    - Opacity fades as radius approaches maximum
+  </Step>
+
+  <Step title="Obstacle Revelation">
+    When a pulse intersects an obstacle:
+    
+    - Obstacle opacity set to `1.0` (fully visible)
+    - Reveal timer set to `100` frames
+    - After timer expires, opacity fades at `0.004` per frame
+  </Step>
+</Steps>
+
+### Fireball Pulse
+
+When the Fireball powerup is active, pulses gain destructive capabilities:
+
+<ParamField path="Fireball Properties">
+  - **Radius**: Starts at `60px`, max `400px`
+  - **Expansion**: `14` pixels per frame (faster than normal)
+  - **Color**: Red hue (`0` HSL)
+  - **Effect**: Destroys obstacles on contact
+  - **Screen shake**: `8` intensity (double normal pulse)
+</ParamField>
+
+<Note>
+  When firing with Fireball active, both a normal pulse (for visibility) and a fireball pulse are created simultaneously.
+</Note>
+
+## Energy Management
+
+Pulses consume plasma energy, which recharges over time.
+
+### Energy Stats
+
+<ResponseField name="max" type="number" default="100">
+  Maximum energy capacity
+</ResponseField>
+
+<ResponseField name="cost" type="number" default="22">
+  Energy cost per pulse (22% of max capacity)
+</ResponseField>
+
+<ResponseField name="rechargeBase" type="number" default="0.09">
+  Base recharge rate per frame at low speeds
+</ResponseField>
+
+<ResponseField name="rechargeFast" type="number" default="0.22">
+  Enhanced recharge rate when speed multiplier > 2
+</ResponseField>
+
+### Recharge Calculation
+
+```javascript
+speedMultiplier = 1 + (playerX / screenWidth) × 3.5
+
+if (speedMultiplier > 2) {
+  rechargeRate = 0.22  // Fast recharge
+} else {
+  rechargeRate = 0.09  // Base recharge
+}
+
+energy = min(100, energy + rechargeRate)
+```
+
+<Warning>
+  At base recharge rate (`0.09`/frame), it takes approximately **244 frames** (~4 seconds at 60fps) to recharge one pulse worth of energy (22 units).
+</Warning>
+
+<Tip>
+  Moving to the right increases your speed multiplier, which triggers faster energy recharge once the multiplier exceeds 2.0.
+</Tip>
+
+## Collision Detection
+
+Precise polygon-based collision system with multiple test points.
+
+### Test Points
+
+Four points on the dragon are tested for collision:
+
+<CodeGroup>
+```javascript Dragon Hit Points
+const centerX = player.x + player.width / 2
+const centerY = player.y + player.height / 2
+
+const testPoints = [
+  { x: centerX, y: player.y + 2 },              // Top center
+  { x: centerX, y: player.y + height - 2 },     // Bottom center
+  { x: player.x + width - 2, y: centerY },      // Right center
+  { x: player.x + 4, y: centerY }               // Left center
+]
+```
+</CodeGroup>
+
+### Collision Types
+
+<Tabs>
+  <Tab title="Obstacle Collision">
+    **Point-in-Polygon Algorithm**
+    
+    Each test point is checked against obstacle polygon shapes using ray-casting:
+    
+    - Obstacles are represented as irregular polygons (10 segments each)
+    - Only visible obstacles (`opacity > 0.01`) are tested
+    - Destroyed obstacles are skipped
+    - Obstacles outside screen bounds (`-80` to `width + 80`) are ignored
+    
+    **Obstacle Properties:**
+    - Width: `55-125` pixels (random)
+    - Height: `60` to `60%` of screen height
+    - Gap between paired obstacles: `220` pixels (HARDER difficulty)
+  </Tab>
+
+  <Tab title="Boundary Collision">
+    **Screen Edge Detection**
+    
+    ```javascript
+    if (player.y < -5 || player.y + player.height > screenHeight + 5) {
+      return true  // Collision detected
+    }
+    ```
+    
+    - Top boundary: `-5` pixels
+    - Bottom boundary: `screenHeight + 5` pixels
+    - Small buffer allows partial clipping
+  </Tab>
+
+  <Tab title="Immunity Override">
+    **Collision Bypass**
+    
+    When the Immunity powerup is active:
+    
+    ```javascript
+    if (activePowerups.immunity.active) {
+      return false  // No collision possible
+    }
+    ```
+    
+    - All collision checks are bypassed
+    - Duration: `180` frames (~3 seconds at 60fps)
+    - Visual indicator: Green shimmer effect around dragon
+  </Tab>
+</Tabs>
+
+## Scoring System
+
+### Score Calculation
+
+<ResponseField name="score" type="formula">
+  ```
+  score = floor(scrollDistance / 10)
+  ```
+  
+  Score is directly based on horizontal distance traveled.
+</ResponseField>
+
+### Scroll Speed
+
+The game world scrolls based on player position:
+
+```javascript
+speedMultiplier = 1 + (playerX / screenWidth) × 3.5
+scrollSpeed = 4.5 × speedMultiplier
+
+// At minimum position (40px):
+speedMultiplier ≈ 1.0 → scrollSpeed = 4.5
+
+// At maximum position (65% of screen):
+speedMultiplier ≈ 3.3 → scrollSpeed = 14.85
+```
+
+<Note>
+  The base speed is `4.5` pixels per frame. At maximum forward position, speed can exceed **3.3x** the base rate.
+</Note>
+
+## Physics System
+
+### Player Physics
+
+<ResponseField name="baseSpeed" type="number" default="4.5">
+  Base scroll speed (HARDER difficulty - increased from 3.2)
+</ResponseField>
+
+<ResponseField name="gravity" type="number" default="0.13">
+  Constant downward acceleration per frame
+</ResponseField>
+
+<ResponseField name="lift" type="number" default="-0.48">
+  Upward force when ascending (negative = upward)
+</ResponseField>
+
+<ResponseField name="drag" type="number" default="0.96">
+  Vertical velocity multiplier (96% retained per frame)
+</ResponseField>
+
+<ResponseField name="dragX" type="number" default="0.93">
+  Horizontal velocity multiplier (93% retained per frame)
+</ResponseField>
+
+### Movement Equation
+
+```javascript
+// Each frame:
+if (upPressed) velocity.y += -0.48
+if (downPressed) velocity.y += 0.336  // 70% of lift
+if (rightPressed) velocity.x += 0.22
+if (leftPressed) velocity.x += -0.14
+
+velocity.y += 0.13  // Gravity
+velocity.y *= 0.96  // Drag
+velocity.x *= 0.93  // Horizontal drag
+
+player.y += velocity.y
+player.x += velocity.x
+
+// Clamp position
+player.x = clamp(player.x, 40, screenWidth × 0.65)
+```
+
+## Screen Shake
+
+Visual feedback system for game events:
+
+<ResponseField name="intensity" type="number">
+  Shake intensity values:
+  - Normal pulse: `4`
+  - Fireball pulse: `8`
+  - Powerup collection: `4`
+  - Crash: `14`
+</ResponseField>
+
+<ResponseField name="decay" type="number" default="0.86">
+  Shake intensity multiplier per frame (86% retained)
+</ResponseField>
+
+Shake applies random translation to the entire canvas:
+```javascript
+offsetX = (random() - 0.5) × intensity × 1.5
+offsetY = (random() - 0.5) × intensity × 1.5
+```
+
+## Difficulty Modifiers
+
+The game includes several "HARDER" difficulty settings:
+
+<CardGroup cols={2}>
+  <Card title="Speed" icon="gauge-high">
+    Base speed: `4.5` (was `3.2`)
+    
+    Speed multiplier: `3.5x` (was lower)
+  </Card>
+  
+  <Card title="Obstacles" icon="mountain">
+    Gap: `220px` (was `270px`)
+    
+    Min height: `60px` (taller obstacles)
+    
+    Pair frequency: `60%` (was `40%`)
+  </Card>
+  
+  <Card title="Gaps" icon="ruler-horizontal">
+    Tighter vertical gaps between paired obstacles:
+    
+    `player.height × 3.8` (was `4.5`)
+  </Card>
+  
+  <Card title="Variance" icon="dice">
+    Obstacle spacing variance: `80px` (more consistent/predictable)
+  </Card>
+</CardGroup>

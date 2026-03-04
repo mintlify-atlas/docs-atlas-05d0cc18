@@ -1,0 +1,613 @@
+---
+title: Rendering Pipeline
+description: Deep dive into canvas rendering, visual effects, and particle systems
+---
+
+## Rendering Overview
+
+Night Fury Radar uses HTML5 Canvas 2D API for all rendering. The game employs several advanced techniques to create its distinctive visual style:
+
+<CardGroup cols={3}>
+  <Card title="Layer System" icon="layer-group">
+    Background → Obstacles → Powerups → Pulses → Particles → Player → HUD
+  </Card>
+  <Card title="Visual Effects" icon="wand-magic-sparkles">
+    Screen shake, glow effects, particle trails, sonar visualization
+  </Card>
+  <Card title="Performance" icon="gauge-high">
+    60 FPS rendering with particle limits and culling
+  </Card>
+</CardGroup>
+
+## Canvas Setup
+
+The canvas is initialized to fill the entire viewport:
+
+```javascript app/components/NightFuryRadar.js:10-13
+const ctx = canvas.getContext("2d");
+const W = canvas.width;
+const H = canvas.height;
+```
+
+### Responsive Sizing
+
+```javascript app/components/NightFuryRadar.js:1027-1032
+const resize = () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+};
+resize();
+window.addEventListener("resize", resize);
+```
+
+<Warning>
+  Resizing the canvas clears all drawn content. The game state persists, but visual artifacts may occur during resize.
+</Warning>
+
+## Rendering Layers
+
+The `drawGame()` function renders in a specific order to ensure proper layering:
+
+```javascript app/components/NightFuryRadar.js:589-734
+function drawGame() {
+  // 1. Obstacles (background)
+  for (const ob of obstacles) { /* ... */ }
+  
+  // 2. Powerups
+  for (const pu of powerups) { /* ... */ }
+  
+  // 3. Pulse rings
+  for (const p of pulses) { /* ... */ }
+  
+  // 4. Trail particles
+  for (const p of particles) { /* ... */ }
+  
+  // 5. Dragon with immunity shield
+  if (activePowerups.immunity.active) { /* ... */ }
+  drawDragon();
+  
+  // 6. HUD overlay
+  drawHUD();
+  
+  // 7. Sonar bars
+  drawSonar();
+  
+  // 8. Crash overlay (if crashed)
+  if (STATE.mode === "CRASH") drawCrash();
+}
+```
+
+## Background Rendering
+
+### Dark Space Theme
+
+```javascript app/components/NightFuryRadar.js:564-575
+// Background
+ctx.fillStyle = "#08081a";  // Deep dark blue
+ctx.fillRect(-10, -10, W + 20, H + 20);
+
+// Subtle grid
+ctx.strokeStyle = "rgba(100, 50, 160, 0.04)";
+ctx.lineWidth = 0.5;
+for (let x = (-scrollX * 0.3) % 60; x < W; x += 60) {
+  ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+}
+for (let y = 0; y < H; y += 60) {
+  ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+}
+```
+
+<Tip>
+  The grid scrolls at 30% of world scroll speed (`scrollX * 0.3`) to create a parallax effect!
+</Tip>
+
+## Obstacle Rendering
+
+Obstacles are drawn as filled polygons with glowing outlines:
+
+```javascript app/components/NightFuryRadar.js:591-613
+for (const ob of obstacles) {
+  if (ob.opacity < 0.01 || ob.destroyed) continue;
+  ctx.save();
+  ctx.globalAlpha = ob.opacity;
+
+  // Fill
+  ctx.fillStyle = `rgba(30, 10, 60, ${ob.opacity * 0.5})`;
+  ctx.beginPath();
+  ctx.moveTo(ob.points[0].x - scrollX, ob.points[0].y);
+  for (let i = 1; i < ob.points.length; i++) {
+    ctx.lineTo(ob.points[i].x - scrollX, ob.points[i].y);
+  }
+  ctx.closePath();
+  ctx.fill();
+
+  // Outline with glow
+  ctx.strokeStyle = `rgba(120, 50, 200, ${ob.opacity * 0.8})`;
+  ctx.lineWidth = 1.5;
+  ctx.shadowColor = "#7c3aed";
+  ctx.shadowBlur = 10 * ob.opacity;
+  ctx.stroke();
+  ctx.restore();
+}
+```
+
+### Fade System
+
+Obstacles fade in when revealed by pulses and gradually fade out:
+
+```javascript app/components/NightFuryRadar.js:437-444
+for (const ob of obstacles) {
+  if (ob.revealT > 0) {
+    ob.revealT--;
+    ob.opacity = ob.revealT / 100;  // Fade from 1.0 to 0.0 over 100 frames
+  } else {
+    ob.opacity = Math.max(0, ob.opacity - 0.004);  // Slow natural fade
+  }
+}
+```
+
+<Note>
+  Obstacles start invisible (`opacity: 0`) and only become visible when hit by a sonar pulse or during a crash.
+</Note>
+
+## Pulse Wave Effects
+
+The pulse wave system creates the core "sonar" visual:
+
+```javascript app/components/NightFuryRadar.js:652-694
+for (const p of pulses) {
+  ctx.save();
+  ctx.globalCompositeOperation = "screen";  // Additive blending
+
+  // Multiple thin rings for warp effect
+  const ringCount = 4;
+  for (let i = 0; i < ringCount; i++) {
+    const ringOffset = i * 6;
+    const ringR = Math.max(0, p.r - ringOffset);
+    const ringAlpha = p.a * (1 - i * 0.2) * 0.6;
+    
+    if (ringR > 5 && ringAlpha > 0.01) {
+      // Outer glow ring
+      ctx.strokeStyle = `hsla(${p.hue + i * 10}, 80%, 60%, ${ringAlpha * 0.4})`;
+      ctx.lineWidth = 3 - i * 0.5;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, ringR, 0, Math.PI * 2);
+      ctx.stroke();
+      
+      // Inner sharp ring
+      ctx.strokeStyle = `hsla(${p.hue + i * 15}, 100%, 75%, ${ringAlpha * 0.7})`;
+      ctx.lineWidth = 1.5 - i * 0.3;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, ringR - 1, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
+  // Subtle center glow (only for fresh pulses)
+  if (p.r < 80) {
+    const centerAlpha = Math.max(0, (1 - p.r / 80)) * p.a * 0.3;
+    const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 30);
+    g.addColorStop(0, `hsla(${p.hue}, 100%, 85%, ${centerAlpha})`);
+    g.addColorStop(1, `hsla(${p.hue}, 100%, 50%, 0)`);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 30, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+```
+
+### Pulse Properties
+
+Each pulse wave has dynamic properties:
+
+```javascript app/components/NightFuryRadar.js:240-250
+pulses.push({
+  x: player.x + player.width / 2,
+  y: player.y + player.height / 2,
+  r: 80,           // Current radius (starts large for visibility)
+  maxR: 650,       // Maximum expansion radius
+  a: 1,            // Alpha opacity (fades as it expands)
+  w: 4,            // Line width
+  hue: isFireball ? 0 : 260 + Math.random() * 40,  // Color hue
+  isFireball: isFireball,
+});
+```
+
+<CodeGroup>
+```javascript Normal Pulse
+{
+  r: 80,
+  maxR: 650,
+  hue: 260-300 (purple range),
+  expansion: 12px/frame
+}
+```
+
+```javascript Fireball Pulse
+{
+  r: 60,
+  maxR: 400,
+  hue: 0 (red),
+  expansion: 14px/frame,
+  destroys obstacles
+}
+```
+</CodeGroup>
+
+## Particle System
+
+The particle system creates the dragon's trail effect:
+
+```javascript app/components/NightFuryRadar.js:511-526
+// Generate particles
+if (Math.random() > 0.3) {
+  particles.push({
+    x: player.x + 4,
+    y: player.y + player.height / 2 + (Math.random() - 0.5) * 8,
+    a: 0.5,                           // Alpha
+    s: 1.5 + Math.random() * 2,       // Size
+    vx: -0.8 - Math.random() * 0.5,   // X velocity (leftward)
+    vy: (Math.random() - 0.5) * 0.4,  // Y velocity (random)
+  });
+}
+if (particles.length > 80) particles.splice(0, particles.length - 80);
+
+// Update particles
+for (let i = particles.length - 1; i >= 0; i--) {
+  const p = particles[i];
+  p.x += p.vx; p.y += p.vy;
+  p.a -= 0.01; p.s *= 0.997;
+  if (p.a <= 0) particles.splice(i, 1);
+}
+```
+
+### Particle Rendering
+
+```javascript app/components/NightFuryRadar.js:697-707
+for (const p of particles) {
+  ctx.save();
+  ctx.globalAlpha = p.a;
+  ctx.fillStyle = "#6d3bbd";    // Purple
+  ctx.shadowColor = "#6d3bbd";
+  ctx.shadowBlur = 4;
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, p.s, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+```
+
+<Tip>
+  Particle count is capped at 80 to maintain performance. The oldest particles are removed when the limit is reached.
+</Tip>
+
+## Player Rendering
+
+The dragon is rendered with rotation based on vertical velocity:
+
+```javascript app/components/NightFuryRadar.js:322-355
+function drawDragon() {
+  ctx.save();
+  ctx.translate(player.x + player.width / 2, player.y + player.height / 2);
+
+  const pitch = Math.max(-0.4, Math.min(0.4, player.vy * 0.08));
+  ctx.rotate(pitch);  // Rotate based on velocity
+
+  const sw = player.width + 16;
+  const sh = player.height + 12;
+
+  if (dragonImg.complete && dragonImg.naturalWidth > 0) {
+    ctx.save();
+    ctx.scale(-1, 1); // Flip to face right
+    ctx.drawImage(dragonImg, -sw / 2, -sh / 2, sw, sh);
+    ctx.restore();
+  } else {
+    // Fallback: simple ellipse with glowing eye
+    ctx.fillStyle = "#1a0b2e";
+    ctx.shadowColor = "#7c3aed";
+    ctx.shadowBlur = 12;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 22, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Eye
+    ctx.shadowBlur = 6;
+    ctx.shadowColor = "#39ff14";
+    ctx.fillStyle = "#39ff14";
+    ctx.beginPath();
+    ctx.arc(16, -3, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+```
+
+### Immunity Shield Effect
+
+When immunity powerup is active, a pulsing shield is drawn:
+
+```javascript app/components/NightFuryRadar.js:710-722
+if (activePowerups.immunity.active) {
+  ctx.save();
+  const shimmer = 0.5 + 0.5 * Math.sin(Date.now() * 0.02);
+  ctx.shadowColor = '#39ff14';
+  ctx.shadowBlur = 20 * shimmer;
+  ctx.globalAlpha = 0.3 + shimmer * 0.4;
+  ctx.strokeStyle = '#39ff14';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(player.x + player.width / 2, player.y + player.height / 2, 35, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+```
+
+## Powerup Rendering
+
+Powerups have animated glow effects:
+
+```javascript app/components/NightFuryRadar.js:616-650
+for (const pu of powerups) {
+  const px = pu.x - scrollX;
+  if (px < -50 || px > W + 50) continue;  // Culling
+
+  ctx.save();
+  const scale = 1 + Math.sin(pu.pulse) * 0.15;  // Pulsing scale
+  const alpha = 0.7 + Math.sin(pu.pulse * 2) * 0.3;  // Pulsing alpha
+
+  ctx.globalAlpha = alpha;
+  ctx.translate(px, pu.y);
+  ctx.scale(scale, scale);
+
+  // Outer glow (radial gradient)
+  const glow = ctx.createRadialGradient(0, 0, 10, 0, 0, 25);
+  const r = parseInt(pu.color.slice(1, 3), 16);
+  const g = parseInt(pu.color.slice(3, 5), 16);
+  const b = parseInt(pu.color.slice(5, 7), 16);
+  glow.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.67)`);
+  glow.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(0, 0, 25, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Symbol
+  ctx.fillStyle = pu.color;
+  ctx.shadowColor = pu.color;
+  ctx.shadowBlur = 15;
+  ctx.font = 'bold 24px "Courier New", monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(pu.symbol, 0, 0);
+
+  ctx.restore();
+}
+```
+
+## Screen Shake Effect
+
+Screen shake is applied at the start of the draw cycle:
+
+```javascript app/components/NightFuryRadar.js:556-561
+if (shake.i > 0) {
+  ctx.translate(
+    (Math.random() - 0.5) * shake.i * 1.5,
+    (Math.random() - 0.5) * shake.i * 1.5
+  );
+}
+```
+
+### Shake Intensity
+
+Different events trigger different shake intensities:
+
+```javascript
+// Normal pulse
+shake.i = 4;
+
+// Fireball pulse
+shake.i = 8;
+
+// Powerup collection
+shake.i = 4;
+
+// Crash
+shake.i = 14;
+```
+
+Shake decays exponentially:
+
+```javascript app/components/NightFuryRadar.js:547-548
+shake.i *= shake.decay;  // 0.86 decay
+if (shake.i < 0.2) shake.i = 0;
+```
+
+## Sonar Visualization
+
+The bottom sonar bars react to pulse events:
+
+```javascript app/components/NightFuryRadar.js:791-807
+function drawSonar() {
+  ctx.save();
+  const n = sonar.bars.length;  // 48 bars
+  const bw = W / n;
+  const base = H - 22;
+  
+  for (let i = 0; i < n; i++) {
+    const h = Math.abs(sonar.bars[i]) * 16;
+    const a = 0.1 + Math.abs(sonar.bars[i]) * 3;
+    ctx.fillStyle = `rgba(100, 50, 170, ${Math.min(0.7, a)})`;
+    ctx.fillRect(i * bw + 1, base - h / 2, bw - 2, h);
+  }
+  
+  ctx.fillStyle = "#5c2d9122";
+  ctx.font = "8px 'Courier New', monospace";
+  ctx.textAlign = "center";
+  ctx.fillText("◈ SONAR ◈", W / 2, H - 5);
+  ctx.restore();
+}
+```
+
+### Sonar Animation
+
+```javascript app/components/NightFuryRadar.js:540-545
+sonar.energy *= 0.94;  // Decay
+for (let i = 0; i < sonar.bars.length; i++) {
+  sonar.bars[i] = sonar.bars[i] * 0.87 +
+    sonar.energy * Math.sin(i * 0.5 + Date.now() * 0.005) *
+    (0.3 + Math.random() * 0.6) * 0.1;
+}
+```
+
+<Note>
+  When a pulse is fired, `sonar.energy` is set to 1, causing the bars to spike and then decay with a wave pattern.
+</Note>
+
+## HUD Rendering
+
+```javascript app/components/NightFuryRadar.js:736-789
+function drawHUD() {
+  ctx.save();
+  
+  // Distance score
+  ctx.fillStyle = "#9b7cc8";
+  ctx.font = "bold 16px 'Courier New', monospace";
+  ctx.textAlign = "left";
+  ctx.fillText(`DIST: ${STATE.score}`, 18, 32);
+
+  // High score
+  if (STATE.highScore > 0) {
+    ctx.fillStyle = "#5a3d8a66";
+    ctx.font = "11px 'Courier New', monospace";
+    ctx.fillText(`BEST: ${STATE.highScore}`, 18, 50);
+  }
+
+  // Plasma energy bar
+  const bw = 140, bh = 8, bx = W - bw - 20, by = 26;
+  ctx.fillStyle = "#12081e";
+  ctx.fillRect(bx, by, bw, bh);
+  const fill = pulse.energy / pulse.max;
+  ctx.fillStyle = "#5c2d91";
+  ctx.fillRect(bx, by, bw * fill, bh);
+  
+  // Speed indicator
+  const sf = 1 + (player.x / W) * 2.2;
+  const sl = Math.min(3, Math.floor(sf));
+  ctx.fillStyle = sl >= 3 ? "#c44" : sl >= 2 ? "#b98030" : "#9b7cc8";
+  ctx.fillText(`SPD ${'▮'.repeat(sl)}${'▯'.repeat(3 - sl)}`, 18, 66);
+
+  // Active powerups
+  let pyOffset = 82;
+  if (activePowerups.immunity.active) {
+    const timeLeft = Math.ceil(activePowerups.immunity.timer / 60);
+    ctx.fillStyle = '#39ff14';
+    ctx.font = 'bold 10px "Courier New", monospace';
+    ctx.fillText(`◆ IMMUNITY ${timeLeft}s`, 18, pyOffset);
+    pyOffset += 14;
+  }
+  if (activePowerups.fireball.active) {
+    ctx.fillStyle = '#ff4444';
+    ctx.font = 'bold 10px "Courier New", monospace';
+    ctx.fillText(`◉ FIREBALL READY`, 18, pyOffset);
+  }
+
+  ctx.restore();
+}
+```
+
+## Performance Optimizations
+
+<AccordionGroup>
+  <Accordion title="Culling" icon="scissors">
+    Entities outside the viewport are skipped:
+    
+    ```javascript
+    const sx = ob.x - scrollX;
+    if (sx > W + 80 || sx + ob.w < -80) continue;
+    ```
+    
+    ```javascript
+    const px = pu.x - scrollX;
+    if (px < -50 || px > W + 50) continue;
+    ```
+  </Accordion>
+  
+  <Accordion title="Particle Limits" icon="chart-line">
+    Particle count is capped at 80:
+    
+    ```javascript app/components/NightFuryRadar.js:520
+    if (particles.length > 80) particles.splice(0, particles.length - 80);
+    ```
+  </Accordion>
+  
+  <Accordion title="Opacity Skipping" icon="eye-slash">
+    Invisible obstacles are not rendered:
+    
+    ```javascript app/components/NightFuryRadar.js:592
+    if (ob.opacity < 0.01 || ob.destroyed) continue;
+    ```
+  </Accordion>
+  
+  <Accordion title="Context Save/Restore" icon="floppy-disk">
+    Canvas state is properly saved and restored to avoid leaking styles:
+    
+    ```javascript
+    ctx.save();
+    // ... rendering code ...
+    ctx.restore();
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Canvas Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Blend Modes" icon="blender">
+    Use `screen` blend mode for additive glow effects:
+    
+    ```javascript
+    ctx.globalCompositeOperation = "screen";
+    ```
+  </Card>
+  
+  <Card title="Gradient Caching" icon="circle-half-stroke">
+    Create gradients once per frame, not per entity when possible.
+  </Card>
+  
+  <Card title="Alpha Optimization" icon="droplet">
+    Use `globalAlpha` for entire entity rather than per-shape when applicable.
+  </Card>
+  
+  <Card title="Path Reuse" icon="route">
+    Use `beginPath()` to clear previous paths and avoid expensive re-draws.
+  </Card>
+</CardGroup>
+
+## Visual Effect Reference
+
+| Effect | Implementation | Location |
+|--------|---------------|----------|
+| Screen Shake | Random translate based on intensity | Line 556 |
+| Pulse Glow | Multiple rings with HSL color and fade | Line 652 |
+| Particle Trail | Spawned behind player, fade over time | Line 511 |
+| Obstacle Fade | Opacity-based reveal/hide | Line 437 |
+| Immunity Shield | Animated circle with shimmer | Line 710 |
+| Sonar Bars | Sine wave animation at bottom | Line 540 |
+| Dragon Rotation | Pitch based on vertical velocity | Line 326 |
+| Powerup Pulse | Scale and alpha animation | Line 621 |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Setup Guide" icon="screwdriver-wrench" href="/development/setup">
+    Return to setup and configuration
+  </Card>
+  
+  <Card title="Architecture" icon="diagram-project" href="/development/architecture">
+    Review game architecture and systems
+  </Card>
+</CardGroup>
